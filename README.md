@@ -5,7 +5,7 @@ GitHub Action that installs the [CE C/C++ toolchain](https://github.com/CE-Progr
 ## Usage
 
 ```yaml
-- uses: your-github-username/setup-ti84-ce-toolchain@v1
+- uses: gavinhsmith/setup-ti84-ce-toolchain@v1
   with:
     version: v14.2 # optional, defaults to v14.2
 ```
