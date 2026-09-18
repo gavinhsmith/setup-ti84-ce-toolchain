@@ -1,0 +1,70 @@
+name: "Setup TI-84 Plus CE Toolchain"
+description: "Downloads and configures the CE C/C++ toolchain (CEdev) for building TI-84 Plus CE calculator programs"
+author: "gavinhsmith"
+
+branding:
+  icon: "terminal"
+  color: "gray-dark"
+
+inputs:
+  version:
+    description: >
+      Toolchain version to install. A specific release tag (e.g. "v14.2") is
+      recommended and pinned by default below. Use "latest" for the newest
+      stable release or "nightly" for the bleeding-edge build — note that
+      major versions (e.g. v15.0) can include breaking changes such as the
+      fasmg -> GNU binutils/GAS switch for assembly sources.
+    required: false
+    default: "v14.2"
+  install-path:
+    description: "Directory to install CEdev into. Defaults to $HOME/CEdev."
+    required: false
+    default: ""
+
+outputs:
+  cedev-path:
+    description: "Absolute path to the installed CEdev directory"
+    value: ${{ steps.install.outputs.cedev-path }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Download and install CEdev
+      id: install
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        VERSION="${{ inputs.version }}"
+        INSTALL_DIR="${{ inputs.install-path }}"
+        if [ -z "$INSTALL_DIR" ]; then
+          INSTALL_DIR="$HOME/CEdev"
+        fi
+
+        case "$VERSION" in
+          latest)
+            URL="https://github.com/CE-Programming/toolchain/releases/latest/download/CEdev-Linux.tar.gz"
+            ;;
+          nightly)
+            URL="https://github.com/CE-Programming/toolchain/releases/download/nightly/CEdev-Linux-nightly.tar.gz"
+            ;;
+          *)
+            URL="https://github.com/CE-Programming/toolchain/releases/download/${VERSION}/CEdev-Linux.tar.gz"
+            ;;
+        esac
+
+        echo "Installing CEdev ($VERSION) to $INSTALL_DIR"
+        curl -fsSL -o /tmp/CEdev.tar.gz "$URL"
+
+        mkdir -p "$INSTALL_DIR"
+        # --strip-components drops the archive's leading "CEdev/" folder so
+        # contents land directly in $INSTALL_DIR regardless of its name.
+        tar -xzf /tmp/CEdev.tar.gz -C "$INSTALL_DIR" --strip-components=1
+
+        echo "$INSTALL_DIR/bin" >> "$GITHUB_PATH"
+        echo "CEDEV=$INSTALL_DIR" >> "$GITHUB_ENV"
+        echo "cedev-path=$INSTALL_DIR" >> "$GITHUB_OUTPUT"
+
+    - name: Verify install
+      shell: bash
+      run: ez80-clang --version
